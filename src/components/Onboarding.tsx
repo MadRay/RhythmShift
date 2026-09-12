@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, Baby } from 'lucide-react';
-import { BABY_AVATARS } from '../data/avatars';
+import { BABY_AVATARS, isBabyAvatarId } from '../data/avatars';
 import type { BabyAvatarId, BabyProfile } from '../types/sleep';
 import {
   calculateAgeWeeks,
@@ -19,7 +19,9 @@ export function Onboarding({ onComplete, initial }: OnboardingProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [dateOfBirth, setDateOfBirth] = useState(initial?.dateOfBirth ?? '');
   const [avatarId, setAvatarId] = useState<BabyAvatarId>(
-    initial?.avatarId ?? 'moonbeam',
+    initial?.avatarId && isBabyAvatarId(initial.avatarId)
+      ? initial.avatarId
+      : 'boy-fair',
   );
   const [touched, setTouched] = useState(false);
 

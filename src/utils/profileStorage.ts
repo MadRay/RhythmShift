@@ -1,4 +1,5 @@
 import type { BabyProfile } from '../types/sleep';
+import { getAvatarById, isBabyAvatarId } from '../data/avatars';
 import { calculateAgeWeeks } from './babyAge';
 import { getWakeWindowForAge } from './scheduleEngine';
 
@@ -13,8 +14,12 @@ export function loadBabyProfile(): BabyProfile | null {
 
     const ageWeeks = calculateAgeWeeks(parsed.dateOfBirth);
     const range = getWakeWindowForAge(ageWeeks);
+    const avatarId = isBabyAvatarId(parsed.avatarId)
+      ? parsed.avatarId
+      : getAvatarById(parsed.avatarId).id;
     return {
       ...parsed,
+      avatarId,
       ageWeeks,
       defaultWakeWindowMinutes: range.sweetSpot,
       morningWakeTime: parsed.morningWakeTime || '07:00 AM',

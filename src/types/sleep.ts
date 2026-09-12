@@ -1,10 +1,10 @@
 export type BabyAvatarId =
-  | 'moonbeam'
-  | 'cloud'
-  | 'starling'
-  | 'lamb'
-  | 'bunny'
-  | 'otter';
+  | 'boy-fair'
+  | 'boy-medium'
+  | 'boy-deep'
+  | 'girl-fair'
+  | 'girl-medium'
+  | 'girl-deep';
 
 export interface BabyAvatar {
   id: BabyAvatarId;
