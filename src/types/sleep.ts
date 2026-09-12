@@ -102,3 +102,28 @@ export interface DemoScenario {
   lastNapDurationMinutes?: number;
   phaseOverride?: RhythmPhase;
 }
+
+/** Day health for History mode — problem days are color-tagged. */
+export type DayHealthTag = 'good' | 'sleepy' | 'active';
+
+export interface HistorySegment {
+  type: 'sleep' | 'awake';
+  /** Minutes since midnight. */
+  startMinutes: number;
+  endMinutes: number;
+  durationMinutes: number;
+  label?: string;
+}
+
+export interface HistoryDay {
+  /** Local calendar date YYYY-MM-DD */
+  dateKey: string;
+  health: DayHealthTag;
+  totalSleepMinutes: number;
+  totalAwakeMinutes: number;
+  napCount: number;
+  longestWakeMinutes: number;
+  segments: HistorySegment[];
+  summary: string;
+  source: 'demo' | 'logged';
+}

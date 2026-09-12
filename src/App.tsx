@@ -3,6 +3,7 @@ import { Pencil } from 'lucide-react';
 import { CountdownHero } from './components/CountdownHero';
 import { DayTimeline } from './components/DayTimeline';
 import { MultiDayForecast } from './components/MultiDayForecast';
+import { HistoryView } from './components/HistoryView';
 import { QuickLogBar } from './components/QuickLogBar';
 import { SleepConsultantChat } from './components/SleepConsultantChat';
 import { DemoToolbar, type DemoAction } from './components/DemoToolbar';
@@ -18,6 +19,15 @@ import {
   loadBabyProfile,
   saveBabyProfile,
 } from './utils/profileStorage';
+import {
+  generateDemoHistory,
+} from './utils/demoHistory';
+import {
+  historyDaysFromEvents,
+  loadLoggedEvents,
+  mergeHistoryDays,
+  saveLoggedEvents,
+} from './utils/eventStorage';
 import {
   computeDailyRhythmState,
   formatMinutesToTime,
@@ -130,9 +140,9 @@ export default function App() {
   const [isNapping, setIsNapping] = useState(false);
   /** When set, hero/predictions use elapsed time since this wake moment (supports lagged logs). */
   const [wakeAnchorAt, setWakeAnchorAt] = useState<number | null>(null);
-  const [events, setEvents] = useState<LoggedEvent[]>([]);
+  const [events, setEvents] = useState<LoggedEvent[]>(() => loadLoggedEvents());
   const [toast, setToast] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'today' | 'forecast'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'forecast' | 'history'>('today');
 
   const effectiveNow = nowOverride ?? clockNow;
 
@@ -142,6 +152,10 @@ export default function App() {
     const id = window.setInterval(tick, 30_000);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    saveLoggedEvents(events);
+  }, [events]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -249,6 +263,14 @@ export default function App() {
     () => (profile ? projectMultiDayRhythm(profile, 3) : []),
     [profile],
   );
+
+  const historyDays = useMemo(() => {
+    if (!profile) return [];
+    return mergeHistoryDays(
+      generateDemoHistory(profile, 3),
+      historyDaysFromEvents(events),
+    );
+  }, [profile, events]);
 
   const handleQuickLog = useCallback(
     (kind: 'WAKE' | 'NAP_START' | 'FEED') => {
@@ -461,31 +483,29 @@ export default function App() {
         />
 
         <div className="flex rounded-2xl border border-slate-700/60 bg-slate-950/50 p-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab('today')}
-            className={`flex-1 rounded-xl py-2 text-sm font-medium transition ${
-              activeTab === 'today'
-                ? 'bg-slate-800 text-slate-50'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Today
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('forecast')}
-            className={`flex-1 rounded-xl py-2 text-sm font-medium transition ${
-              activeTab === 'forecast'
-                ? 'bg-slate-800 text-slate-50'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            3-Day Forecast
-          </button>
+          {(
+            [
+              { id: 'today', label: 'Today' },
+              { id: 'forecast', label: 'Forecast' },
+              { id: 'history', label: 'History' },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 rounded-xl py-2 text-sm font-medium transition ${
+                activeTab === tab.id
+                  ? 'bg-slate-800 text-slate-50'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {activeTab === 'today' ? (
+        {activeTab === 'today' && (
           <DayTimeline
             schedule={rhythm.schedule}
             nowLabel={nowLabel}
@@ -493,11 +513,13 @@ export default function App() {
             onSleptInStroller={handleSleptInStroller}
             onMarkComplete={handleStartNap}
           />
-        ) : (
-          <MultiDayForecast forecasts={forecasts} />
+        )}
+        {activeTab === 'forecast' && <MultiDayForecast forecasts={forecasts} />}
+        {activeTab === 'history' && (
+          <HistoryView days={historyDays} babyName={profile.name} />
         )}
 
-        {events.length > 0 && (
+        {activeTab !== 'history' && events.length > 0 && (
           <section className="rounded-3xl border border-slate-700/60 bg-slate-900/60 p-4">
             <div className="flex items-center justify-between mb-2 gap-2">
               <h2 className="text-sm font-semibold text-slate-200">Recent logs</h2>
