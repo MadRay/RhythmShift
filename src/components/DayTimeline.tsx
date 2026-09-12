@@ -88,6 +88,7 @@ export function DayTimeline({
           const isLast = index === visible.length - 1;
           const isPassed = block.status === 'completed';
           const isActive = block.status === 'active';
+          const isAlert = Boolean(block.isAlert);
           const isFirstFocus = focusBlocks[0]?.id === block.id;
 
           return (
@@ -101,36 +102,52 @@ export function DayTimeline({
               {!isLast && (
                 <span
                   className={`absolute left-[15px] top-8 bottom-0 w-px ${
-                    isPassed ? 'bg-slate-700/50' : 'bg-slate-700/80'
+                    isPassed ? 'bg-slate-700/50' : isAlert ? 'bg-rose-700/50' : 'bg-slate-700/80'
                   }`}
                 />
               )}
               <div
                 className={`relative z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-slate-950 ${
-                  isActive
-                    ? 'border-indigo-400 ring-2 ring-indigo-400/30'
-                    : meta.accent
+                  isActive && isAlert
+                    ? 'border-rose-400 ring-2 ring-rose-400/40'
+                    : isActive
+                      ? 'border-indigo-400 ring-2 ring-indigo-400/30'
+                      : isAlert
+                        ? 'border-rose-400/50'
+                        : meta.accent
                 }`}
               >
                 <span
                   className={`absolute -left-0 h-2 w-2 rounded-full ${
-                    isActive ? 'bg-indigo-300' : meta.dot
+                    isActive && isAlert
+                      ? 'bg-rose-300'
+                      : isActive
+                        ? 'bg-indigo-300'
+                        : isAlert
+                          ? 'bg-rose-400'
+                          : meta.dot
                   } ${isPassed ? 'opacity-40' : 'opacity-80'}`}
                 />
                 <Icon
-                  className={`h-3.5 w-3.5 ${isPassed ? 'text-slate-500' : 'text-slate-200'}`}
+                  className={`h-3.5 w-3.5 ${
+                    isPassed ? 'text-slate-500' : isAlert ? 'text-rose-200' : 'text-slate-200'
+                  }`}
                 />
               </div>
 
               <div
                 className={`flex-1 rounded-2xl border px-3.5 py-3 transition-colors ${
-                  isActive
-                    ? 'border-indigo-400/50 bg-indigo-500/10 shadow-lg shadow-indigo-950/30'
-                    : isPassed
-                      ? 'border-slate-800/80 bg-slate-950/20'
-                      : isFirstFocus
-                        ? 'border-slate-600/60 bg-slate-950/50'
-                        : 'border-slate-700/50 bg-slate-950/40'
+                  isActive && isAlert
+                    ? 'border-rose-400/60 bg-rose-500/15 shadow-lg shadow-rose-950/40'
+                    : isActive
+                      ? 'border-indigo-400/50 bg-indigo-500/10 shadow-lg shadow-indigo-950/30'
+                      : isPassed
+                        ? 'border-slate-800/80 bg-slate-950/20'
+                        : isAlert
+                          ? 'border-rose-500/40 bg-rose-950/30'
+                          : isFirstFocus
+                            ? 'border-slate-600/60 bg-slate-950/50'
+                            : 'border-slate-700/50 bg-slate-950/40'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -139,7 +156,9 @@ export function DayTimeline({
                       className={`font-medium ${
                         isPassed
                           ? 'text-slate-400 line-through decoration-slate-600'
-                          : 'text-slate-100'
+                          : isAlert
+                            ? 'text-rose-50'
+                            : 'text-slate-100'
                       }`}
                     >
                       {block.title}
@@ -151,16 +170,23 @@ export function DayTimeline({
                   <div className="flex flex-col items-end gap-1">
                     <span
                       className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                        isActive
-                          ? 'bg-indigo-500/30 text-indigo-200'
-                          : isPassed
-                            ? 'bg-slate-800/80 text-slate-500'
-                            : 'bg-emerald-500/15 text-emerald-200/90'
+                        isActive && isAlert
+                          ? 'bg-rose-500/35 text-rose-100'
+                          : isActive
+                            ? 'bg-indigo-500/30 text-indigo-200'
+                            : isPassed
+                              ? 'bg-slate-800/80 text-slate-500'
+                              : 'bg-emerald-500/15 text-emerald-200/90'
                       }`}
                     >
                       {STATUS_LABEL[block.status]}
                     </span>
-                    {block.isAdjusted && !isPassed && (
+                    {block.isAlert && !isPassed && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/25 text-rose-100 border border-rose-400/40">
+                        Alert
+                      </span>
+                    )}
+                    {block.isAdjusted && !block.isAlert && !isPassed && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30">
                         Adjusted
                       </span>
@@ -169,7 +195,13 @@ export function DayTimeline({
                 </div>
 
                 {block.adjustmentReason && !isPassed && (
-                  <p className="mt-2 text-xs text-amber-200/90 leading-relaxed border-l-2 border-amber-400/40 pl-2">
+                  <p
+                    className={`mt-2 text-xs leading-relaxed border-l-2 pl-2 ${
+                      isAlert
+                        ? 'text-rose-100/95 border-rose-400/50'
+                        : 'text-amber-200/90 border-amber-400/40'
+                    }`}
+                  >
                     {block.adjustmentReason}
                   </p>
                 )}

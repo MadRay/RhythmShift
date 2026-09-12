@@ -233,7 +233,12 @@ function derivePhase(
   return 'OVERTIRED';
 }
 
-function phaseCopy(phase: RhythmPhase, remaining: number): {
+function phaseCopy(
+  phase: RhythmPhase,
+  remaining: number,
+  elapsed: number,
+  absoluteMax: number,
+): {
   headline: string;
   guidance: string;
   badge: string;
@@ -264,14 +269,17 @@ function phaseCopy(phase: RhythmPhase, remaining: number): {
         badge: 'Optimal Sleep Window',
         cues: ['Glazed eyes', 'Jerky movements calming', 'Quiet fussiness'],
       };
-    case 'OVERTIRED':
+    case 'OVERTIRED': {
+      const isCritical = elapsed >= absoluteMax;
       return {
-        headline: 'Cortisol Spike Alert',
-        guidance:
-          'Baby may be overtired. Use extra soothing — rocking, white noise, feed — and expect a trickier settle.',
-        badge: 'Cortisol Spike Alert',
+        headline: isCritical ? 'Critical Overwake Alert' : 'Cortisol Spike Alert',
+        guidance: isCritical
+          ? `${elapsed}m awake — at/past the ~${absoluteMax}m max. Missed nap window. Dark room, feed, rock with white noise; expect a fighty settle and shifted naps.`
+          : 'Baby may be overtired. Use extra soothing — rocking, white noise, feed — and expect a trickier settle.',
+        badge: isCritical ? 'Critical Overwake' : 'Cortisol Spike Alert',
         cues: ['Arching back', 'Second wind energy', 'Inconsolable fuss'],
       };
+    }
     case 'NAPPING':
       return {
         headline: 'Currently Napping',
@@ -294,6 +302,14 @@ export function buildTodaySchedule(input: ScheduleEngineInput): ScheduleBlock[] 
   const morning = parseTimeToMinutes(profile.morningWakeTime);
   const bedtime = parseTimeToMinutes(profile.targetBedtime);
 
+  // When still awake past the planned window, stretch morning wake and shift the day.
+  const elapsedAwake = input.elapsedAwakeMinutes;
+  const isOverwake =
+    elapsedAwake !== undefined &&
+    input.isNapping !== true &&
+    elapsedAwake > wakeWindow;
+  const isCriticalOverwake = isOverwake && elapsedAwake! >= range.absoluteMax;
+
   // Newborn ~6 weeks: typically 4–5 short naps
   const napDurations =
     profile.ageWeeks <= 12
@@ -305,17 +321,26 @@ export function buildTodaySchedule(input: ScheduleEngineInput): ScheduleBlock[] 
   const blocks: ScheduleBlock[] = [];
   let cursor = morning;
 
-  const firstWakeEnd = morning + wakeWindow;
+  // Keep end strictly after "now" so stampScheduleByClock marks this wake as active.
+  const firstWakeEnd = isOverwake
+    ? Math.max(morning + elapsedAwake!, nowMinutes + 1)
+    : morning + wakeWindow;
+  const firstWakeDuration = firstWakeEnd - morning;
   blocks.push({
     id: 'wake-0',
-    title: 'Morning Wake Window',
+    title: isCriticalOverwake ? 'Extended Morning Wake (Overdue)' : 'Morning Wake Window',
     type: 'wake',
     startTime: formatMinutesToTime(morning),
     endTime: formatMinutesToTime(firstWakeEnd),
-    durationMinutes: wakeWindow,
+    durationMinutes: firstWakeDuration,
     status: 'projected',
-    isAdjusted: shortNap.isAdjusted,
-    adjustmentReason: shortNap.reason,
+    isAdjusted: shortNap.isAdjusted || isOverwake,
+    isAlert: isCriticalOverwake,
+    adjustmentReason: isCriticalOverwake
+      ? `Critical: ${elapsedAwake}m awake (max ~${range.absoluteMax}m for this age). Nap window missed — later naps shifted later.`
+      : isOverwake
+        ? `Wake overrun: ${elapsedAwake}m awake vs ${wakeWindow}m target. Schedule shifted.`
+        : shortNap.reason,
   });
 
   cursor = firstWakeEnd;
@@ -413,7 +438,7 @@ export function computeDailyRhythmState(input: ScheduleEngineInput): DailyRhythm
   const remaining = Math.max(0, wakeWindow - elapsed);
   const progressPercent = Math.min(100, Math.round((elapsed / wakeWindow) * 100));
   const phase = derivePhase(elapsed, wakeWindow, isNapping);
-  const copy = phaseCopy(phase, remaining);
+  const copy = phaseCopy(phase, remaining, elapsed, range.absoluteMax);
 
   return {
     currentPhase: phase,
@@ -424,6 +449,7 @@ export function computeDailyRhythmState(input: ScheduleEngineInput): DailyRhythm
     activeGuidance: copy.guidance,
     cuesToWatch: copy.cues,
     schedule,
+    badgeLabel: copy.badge,
   };
 }
 

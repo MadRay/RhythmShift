@@ -1,9 +1,10 @@
-import { FlaskConical, RotateCcw, Sunrise, Timer, AlertOctagon } from 'lucide-react';
+import { FlaskConical, RotateCcw, Sunrise, Sparkles, AlertOctagon, AlertTriangle } from 'lucide-react';
 
 export type DemoAction =
   | 'fresh-morning'
-  | 'wind-down'
+  | 'sweet-spot'
   | 'short-nap'
+  | 'long-awake'
   | 'reset';
 
 interface DemoToolbarProps {
@@ -23,16 +24,22 @@ const ACTIONS: Array<{
     tone: 'hover:border-emerald-400/50 hover:text-emerald-200',
   },
   {
-    id: 'wind-down',
-    label: 'Wind-Down Approaching (40m elapsed)',
-    icon: Timer,
-    tone: 'hover:border-indigo-400/50 hover:text-indigo-200',
+    id: 'sweet-spot',
+    label: 'Sweet Spot — Put Down Now',
+    icon: Sparkles,
+    tone: 'hover:border-amber-400/50 hover:text-amber-200',
   },
   {
     id: 'short-nap',
     label: 'Short Nap Disaster (Nap was only 22m)',
     icon: AlertOctagon,
     tone: 'hover:border-rose-400/50 hover:text-rose-200',
+  },
+  {
+    id: 'long-awake',
+    label: 'Critical Overwake (3h awake)',
+    icon: AlertTriangle,
+    tone: 'hover:border-rose-500/60 hover:text-rose-100',
   },
   {
     id: 'reset',

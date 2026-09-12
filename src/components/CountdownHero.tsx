@@ -88,7 +88,7 @@ export function CountdownHero({ rhythm, babyAgeWeeks, babyName }: CountdownHeroP
           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${style.badge}`}
         >
           <Icon className="h-3.5 w-3.5" />
-          {PHASE_BADGE_LABEL[rhythm.currentPhase]}
+          {rhythm.badgeLabel ?? PHASE_BADGE_LABEL[rhythm.currentPhase]}
         </span>
       </div>
 

@@ -294,13 +294,24 @@ export default function App() {
           showToast('Demo: Fresh morning wake — clock set near 7:00');
           break;
         }
-        case 'wind-down': {
-          const demoNow = morning + 40;
+        case 'sweet-spot': {
+          const elapsed = range.sweetSpot;
+          // Keep clock just inside the wake window so timeline shows wake as Now.
+          const demoNow = morning + elapsed - 1;
           setNowOverride(demoNow);
           setLastNapDurationMinutes(undefined);
           setIsNapping(false);
-          setWakeAnchorAt(Date.now() - 40 * 60_000);
-          showToast('Demo: Wind-down approaching — 40m into morning window');
+          setWakeAnchorAt(Date.now() - elapsed * 60_000);
+          setEvents([
+            createEvent(
+              'WAKE',
+              `Demo: Morning wake — ${elapsed}m ago (sweet spot)`,
+              [],
+              undefined,
+              timestampAtTodayTime(profile.morningWakeTime),
+            ),
+          ]);
+          showToast(`Demo: Sweet spot — ${elapsed}m awake, optimal put-down window`);
           break;
         }
         case 'short-nap': {
@@ -322,6 +333,32 @@ export default function App() {
             ...prev,
           ]);
           showToast('Demo: Short nap (22m) — schedule rerouted');
+          break;
+        }
+        case 'long-awake': {
+          const overwakeMinutes = 180;
+          const demoNow = morning + overwakeMinutes;
+          setNowOverride(demoNow);
+          setLastNapDurationMinutes(undefined);
+          setIsNapping(false);
+          setWakeAnchorAt(Date.now() - overwakeMinutes * 60_000);
+          setEvents([
+            createEvent(
+              'TIRED_CUE',
+              'Demo: Critical overwake — 3h without a nap',
+              ['Arching back', 'Second wind', 'Inconsolable fuss'],
+              undefined,
+              timestampAtTodayTime(formatMinutesToTime(demoNow)),
+            ),
+            createEvent(
+              'WAKE',
+              'Demo: Morning wake — still awake 3h later',
+              [],
+              undefined,
+              timestampAtTodayTime(profile.morningWakeTime),
+            ),
+          ]);
+          showToast('Demo: 3h awake — critical overwake + timeline shifted');
           break;
         }
         case 'reset': {

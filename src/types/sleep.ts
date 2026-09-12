@@ -53,6 +53,8 @@ export interface ScheduleBlock {
   status: 'completed' | 'active' | 'projected';
   isAdjusted: boolean;
   adjustmentReason?: string;
+  /** True when the block signals a critical rhythm failure (e.g. extreme overwake). */
+  isAlert?: boolean;
 }
 
 export type RhythmPhase =
@@ -71,6 +73,8 @@ export interface DailyRhythmState {
   activeGuidance: string;
   cuesToWatch: string[];
   schedule: ScheduleBlock[];
+  /** Phase badge label (may escalate within a phase, e.g. critical overwake). */
+  badgeLabel?: string;
 }
 
 export interface WakeWindowRange {
